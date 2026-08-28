@@ -1,0 +1,119 @@
+name: Gerar APK
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Gerar APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Baixar projeto
+        uses: actions/checkout@v4
+
+      - name: Configurar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Configurar Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Instalar SDK Android
+        run: |
+          yes | sdkmanager --licenses || true
+          sdkmanager "platform-tools"
+          sdkmanager "platforms;android-35"
+          sdkmanager "platforms;android-34"
+          sdkmanager "build-tools;35.0.0"
+
+      - name: Preparar Gradle
+        run: |
+          if [ -f "./gradlew" ]; then
+            chmod +x ./gradlew
+            echo "GRADLE_CMD=./gradlew" >> "$GITHUB_ENV"
+            echo "GRADLE_DIR=." >> "$GITHUB_ENV"
+          else
+            echo "Gradle Wrapper não encontrado."
+            echo "GRADLE_CMD=gradle" >> "$GITHUB_ENV"
+            echo "GRADLE_DIR=." >> "$GITHUB_ENV"
+          fi
+
+      - name: Instalar Gradle 8.7
+        if: env.GRADLE_CMD == 'gradle'
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Verificar projeto
+        run: |
+          echo "=== PROJETO ==="
+          pwd
+          ls -la
+
+          echo "=== ARQUIVOS GRADLE ==="
+          find . -maxdepth 3 -type f \
+            \( -name "settings.gradle" \
+            -o -name "settings.gradle.kts" \
+            -o -name "build.gradle" \
+            -o -name "build.gradle.kts" \) \
+            -print
+
+      - name: Ver tarefas Gradle
+        run: |
+          if [ "$GRADLE_CMD" = "gradle" ]; then
+            gradle tasks --all
+          else
+            ./gradlew tasks --all
+          fi
+
+      - name: Gerar APK Debug
+        run: |
+          echo "=== GERANDO APK ==="
+
+          if [ "$GRADLE_CMD" = "gradle" ]; then
+            gradle assembleDebug \
+              --stacktrace \
+              --no-daemon \
+              --warning-mode all
+          else
+            ./gradlew assembleDebug \
+              --stacktrace \
+              --no-daemon \
+              --warning-mode all
+          fi
+
+      - name: Procurar APK
+        run: |
+          echo "=== PROCURANDO APK ==="
+
+          find . -type f -name "*.apk" -print
+
+          APK=$(find . -type f -name "*.apk" | head -1)
+
+          if [ -z "$APK" ]; then
+            echo "ERRO: nenhum APK foi encontrado."
+            exit 1
+          fi
+
+          echo "APK encontrado: $APK"
+
+          mkdir -p apk-final
+          cp "$APK" apk-final/Oloww.apk
+
+      - name: Disponibilizar APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Oloww-APK
+          path: apk-final/Oloww.apk
+          if-no-files-found: error
