@@ -1,0 +1,442 @@
+name: 0low - Gerar APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Baixar projeto
+        uses: actions/checkout@v4
+
+      - name: Configurar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Criar projeto Android inteiro
+        shell: bash
+        run: |
+
+          # =========================
+          # PASTAS
+          # =========================
+
+          mkdir -p app/src/main/java/com/olow/app
+          mkdir -p app/src/main/res/values
+
+
+          # =========================
+          # SETTINGS
+          # =========================
+
+          cat > settings.gradle.kts <<'EOF'
+
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+
+          rootProject.name = "0low"
+
+          include(":app")
+
+          EOF
+
+
+          # =========================
+          # BUILD PRINCIPAL
+          # =========================
+
+          cat > build.gradle.kts <<'EOF'
+
+          plugins {
+              id("com.android.application") version "8.7.3" apply false
+              id("org.jetbrains.kotlin.android") version "2.0.21" apply false
+          }
+
+          EOF
+
+
+          # =========================
+          # GRADLE PROPERTIES
+          # =========================
+
+          cat > gradle.properties <<'EOF'
+
+          org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
+          android.useAndroidX=true
+          kotlin.code.style=official
+
+          EOF
+
+
+          # =========================
+          # APP BUILD
+          # =========================
+
+          cat > app/build.gradle.kts <<'EOF'
+
+          plugins {
+              id("com.android.application")
+              id("org.jetbrains.kotlin.android")
+          }
+
+          android {
+
+              namespace = "com.olow.app"
+
+              compileSdk = 35
+
+              defaultConfig {
+
+                  applicationId = "com.olow.app"
+
+                  minSdk = 24
+
+                  targetSdk = 35
+
+                  versionCode = 1
+
+                  versionName = "1.0"
+
+              }
+
+              compileOptions {
+
+                  sourceCompatibility = JavaVersion.VERSION_17
+
+                  targetCompatibility = JavaVersion.VERSION_17
+
+              }
+
+              kotlinOptions {
+
+                  jvmTarget = "17"
+
+              }
+
+          }
+
+          dependencies {
+
+              implementation("androidx.core:core-ktx:1.15.0")
+
+              implementation("androidx.appcompat:appcompat:1.7.0")
+
+              implementation("com.google.android.material:material:1.12.0")
+
+          }
+
+          EOF
+
+
+          # =========================
+          # MANIFEST
+          # =========================
+
+          cat > app/src/main/AndroidManifest.xml <<'EOF'
+
+          <?xml version="1.0" encoding="utf-8"?>
+
+          <manifest
+              xmlns:android="http://schemas.android.com/apk/res/android">
+
+              <uses-permission
+                  android:name="android.permission.INTERNET" />
+
+              <uses-permission
+                  android:name="android.permission.CAMERA" />
+
+              <uses-permission
+                  android:name="android.permission.RECORD_AUDIO" />
+
+              <application
+
+                  android:allowBackup="true"
+
+                  android:label="0low"
+
+                  android:supportsRtl="true"
+
+                  android:theme="@style/Theme.Olow">
+
+                  <activity
+
+                      android:name=".MainActivity"
+
+                      android:exported="true">
+
+                      <intent-filter>
+
+                          <action
+                              android:name="android.intent.action.MAIN" />
+
+                          <category
+                              android:name="android.intent.category.LAUNCHER" />
+
+                      </intent-filter>
+
+                  </activity>
+
+              </application>
+
+          </manifest>
+
+          EOF
+
+
+          # =========================
+          # TEMA
+          # =========================
+
+          cat > app/src/main/res/values/styles.xml <<'EOF'
+
+          <?xml version="1.0" encoding="utf-8"?>
+
+          <resources>
+
+              <style
+                  name="Theme.Olow"
+                  parent="android:style/Theme.Material.NoActionBar">
+
+                  <item
+                      name="android:fontFamily">
+                      sans
+                  </item>
+
+                  <item
+                      name="android:colorAccent">
+                      #5865F2
+                  </item>
+
+                  <item
+                      name="android:statusBarColor">
+                      #111214
+                  </item>
+
+                  <item
+                      name="android:navigationBarColor">
+                      #111214
+                  </item>
+
+              </style>
+
+          </resources>
+
+          EOF
+
+
+          # =========================
+          # MAIN ACTIVITY
+          # =========================
+
+          cat > app/src/main/java/com/olow/app/MainActivity.kt <<'EOF'
+
+          package com.olow.app
+
+          import android.app.Activity
+          import android.os.Bundle
+          import android.graphics.Color
+          import android.view.Gravity
+          import android.widget.Button
+          import android.widget.LinearLayout
+          import android.widget.TextView
+
+          class MainActivity : Activity() {
+
+              override fun onCreate(
+                  savedInstanceState: Bundle?
+              ) {
+
+                  super.onCreate(savedInstanceState)
+
+                  val tela =
+                      LinearLayout(this)
+
+                  tela.orientation =
+                      LinearLayout.VERTICAL
+
+                  tela.gravity =
+                      Gravity.CENTER
+
+                  tela.setPadding(
+                      30,
+                      30,
+                      30,
+                      30
+                  )
+
+                  tela.setBackgroundColor(
+                      Color.rgb(
+                          17,
+                          18,
+                          20
+                      )
+                  )
+
+                  val titulo =
+                      TextView(this)
+
+                  titulo.text =
+                      "0low"
+
+                  titulo.textSize =
+                      42f
+
+                  titulo.setTextColor(
+                      Color.WHITE
+                  )
+
+                  titulo.gravity =
+                      Gravity.CENTER
+
+                  tela.addView(titulo)
+
+                  val subtitulo =
+                      TextView(this)
+
+                  subtitulo.text =
+                      "0low Despaty"
+
+                  subtitulo.textSize =
+                      18f
+
+                  subtitulo.setTextColor(
+                      Color.LTGRAY
+                  )
+
+                  tela.addView(subtitulo)
+
+                  val entrar =
+                      Button(this)
+
+                  entrar.text =
+                      "Entrar"
+
+                  entrar.setOnClickListener {
+
+                      subtitulo.text =
+                          "Bem-vindo ao 0low!"
+
+                  }
+
+                  tela.addView(entrar)
+
+                  val servidor =
+                      Button(this)
+
+                  servidor.text =
+                      "Criar servidor"
+
+                  servidor.setOnClickListener {
+
+                      subtitulo.text =
+                          "Servidor criado!"
+
+                  }
+
+                  tela.addView(servidor)
+
+                  val mensagem =
+                      Button(this)
+
+                  mensagem.text =
+                      "Mensagens"
+
+                  mensagem.setOnClickListener {
+
+                      subtitulo.text =
+                          "Mensagens privadas"
+
+                  }
+
+                  tela.addView(mensagem)
+
+                  val call =
+                      Button(this)
+
+                  call.text =
+                      "Entrar em Call"
+
+                  call.setOnClickListener {
+
+                      subtitulo.text =
+                          "Call iniciada!"
+
+                  }
+
+                  tela.addView(call)
+
+                  val perfil =
+                      Button(this)
+
+                  perfil.text =
+                      "Perfil"
+
+                  perfil.setOnClickListener {
+
+                      subtitulo.text =
+                          "Perfil do 0low"
+
+                  }
+
+                  tela.addView(perfil)
+
+                  setContentView(tela)
+
+              }
+
+          }
+
+          EOF
+
+
+      # =========================
+      # INSTALAR GRADLE
+      # =========================
+
+      - name: Configurar Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.10.2"
+
+
+      # =========================
+      # GERAR APK
+      # =========================
+
+      - name: Gerar APK
+        run: |
+
+          gradle assembleDebug --no-daemon
+
+
+      # =========================
+      # ENTREGAR APK
+      # =========================
+
+      - name: Disponibilizar APK
+        uses: actions/upload-artifact@v4
+
+        with:
+
+          name: 0low-APK
+
+          path: app/build/outputs/apk/debug/app-debug.apk
